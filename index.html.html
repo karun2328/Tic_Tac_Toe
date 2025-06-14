@@ -1,0 +1,238 @@
+<!--
+  Author: Purna Satya Karun Saride
+  Date: June 14, 2025
+  Description: Tic-Tac-Toe game for CSx91 Exercise 2
+-->
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tic-Tac-Toe</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding-top: 30px;
+    }
+
+    table {
+      margin: 10px auto;
+      border-collapse: collapse;
+    }
+
+    td {
+      width: 60px;
+      height: 60px;
+      border: 2px solid #444;
+    }
+
+    td > input {
+      width: 100%;
+      height: 100%;
+      font-size: 28px;
+      background-color: transparent;
+      border: none;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    input:disabled {
+      cursor: not-allowed;
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin-top: 10px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <h3>Exercise 1 - Accelerated Tic-Tac-Toe</h3>
+  <button id="Mode" onclick="toggleMode()">Start</button>
+
+  <table>
+    <tr><td><input id="1" type="button"></td><td><input id="2" type="button"></td><td><input id="3" type="button"></td></tr>
+    <tr><td><input id="4" type="button"></td><td><input id="5" type="button"></td><td><input id="6" type="button"></td></tr>
+    <tr><td><input id="7" type="button"></td><td><input id="8" type="button"></td><td><input id="9" type="button"></td></tr>
+  </table>
+
+  <script>
+    // Possible win combinations (3 in a row, column, or diagonal)
+    const wins = [8, 123, 456, 789, 147, 258, 369, 159, 357];
+    let turn = 0;
+    const mode = document.getElementById("Mode");
+    const btns = document.querySelectorAll("td>input");
+
+    btns.forEach((btn) => {
+      btn.setAttribute("onclick", "postPlay(this)");
+    });
+
+    /**
+     * Toggles between Start and Clear mode and resets game state if needed.
+     */
+    function toggleMode() {
+      if (mode.innerText.charAt(0) == "S") {
+        mode.innerText = "Clear";
+        if (turn == 0) initMoves();
+      } else {
+        btns.forEach((btn) => {
+          btn.value = "";
+          btn.style.backgroundColor = "transparent";
+        });
+        mode.innerText = "Start";
+        turn = 0;
+      }
+    }
+
+    /**
+     * Handles a player's move, checks for win or tie, and calls computer if needed.
+     * @param {HTMLElement} e - The clicked input cell.
+     */
+    function postPlay(e) {
+      /**
+       * Marks the winning 3 cells and shows an alert.
+       * @param {string} bk - A string with the winning mark and win index.
+       */
+      function markWin(bk) {
+        const k = parseInt(bk.slice(1));
+        let w = wins[k];
+        while (w > 0) {
+          const n = w % 10;
+          w = (w - n) / 10;
+          btns[n - 1].style.backgroundColor = "red";
+        }
+        setTimeout(() => alert(bk.slice(0, 1) + " Wins!"), 300);
+      }
+
+      if (mode.innerText.charAt(0) == "S") {
+        if (turn == 0) turn = 2;
+        toggleMode();
+      }
+
+      if (e.value) return;
+
+      e.value = (turn <= 0 ? "O" : "X");
+      turn = (turn > 1 ? 1 : -turn);
+
+      const bk = testGame();
+      if (bk) {
+        markWin(bk);
+      } else if (turn < 0) {
+        nextMove();
+      } else if (isBoardFull()) {
+        setTimeout(() => alert("Oops, it's a tie!"), 300);
+      }
+    }
+
+    /**
+     * Initializes the game with two random moves by the computer.
+     */
+    function initMoves() {
+      const n1 = Math.trunc(9 * Math.random()) + 1;
+      postPlay(btns[n1 - 1]);
+
+      let n2 = n1;
+      while (n2 == n1) {
+        n2 = Math.trunc(9 * Math.random()) + 1;
+      }
+
+      turn = -1;
+      postPlay(btns[n2 - 1]);
+    }
+
+    /**
+     * Computer plays its next move by trying to win, block, or take a free cell.
+     */
+    function nextMove() {
+      let b, b0, k, m, n, n0, n1, w;
+
+      for (k = 1; k <= 8; k++) {
+        w = wins[k];
+        m = 0;
+        b0 = "";
+        n1 = 0;
+
+        while (w > 0) {
+          n = w % 10;
+          w = (w - n) / 10;
+          b = btns[n - 1].value;
+
+          if (!b) {
+            n1 = n;
+            if (!n0) n0 = n1;
+          } else if (!b0) {
+            b0 = b;
+          }
+
+          if (b0 && b == b0) m++;
+        }
+
+        if (m == 2 && n1) {
+          postPlay(btns[n1 - 1]);
+          return;
+        }
+      }
+
+      if (!n0 && isBoardFull()) {
+        setTimeout(() => alert("Oops, it's a tie!"), 300);
+        return;
+      }
+
+      if (!btns[4].value) {
+        postPlay(btns[4]); // Prefer center
+      } else {
+        for (k = 1; k <= 2; k++) {
+          for (n = k; n <= 9; n += 2) {
+            if (!btns[n - 1].value) {
+              postPlay(btns[n - 1]);
+              return;
+            }
+          }
+        }
+      }
+    }
+
+    /**
+     * Checks if any player has won the game.
+     * @returns {string|false} Winning mark + win index, or false if no win.
+     */
+    function testGame() {
+      let b, b0, k, m, n, w;
+
+      for (k = 1; k <= 8; k++) {
+        w = wins[k];
+        m = 0;
+
+        while (w > 0) {
+          n = w % 10;
+          w = (w - n) / 10;
+          b = btns[n - 1].value;
+
+          if (!b) continue;
+
+          if (m == 0) b0 = b;
+          if (b == b0) m++;
+        }
+
+        if (m >= 3) return b + k;
+      }
+
+      return false;
+    }
+
+    /**
+     * Checks if the game board is full with no empty cells.
+     * @returns {boolean} True if the board is full, false otherwise.
+     */
+    function isBoardFull() {
+      return Array.from(btns).every(btn => btn.value !== "");
+    }
+  </script>
+
+</body>
+</html>
